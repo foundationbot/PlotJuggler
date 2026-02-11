@@ -294,6 +294,16 @@ struct PalStatisticsValues
     return "pal_statistics_msgs/StatisticsValues";
   }
 };
+
+//--------------------
+// controller_msgs/msg/RobotConfigurationData (custom parser for PlotJuggler)
+struct RobotConfigurationData
+{
+  static const char* id()
+  {
+    return "controller_msgs/RobotConfigurationData";
+  }
+};
 }  // namespace PJ::Msg
 
 #endif  // SPECIAL_MESSAGES_H

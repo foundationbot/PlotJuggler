@@ -94,6 +94,10 @@ ParserROS::ParserROS(const std::string& topic_name, const std::string& type_name
   {
     _customized_parser = std::bind(&ParserROS::parsePalStatisticsValues, this, _1, _2);
   }
+  else if (Msg::RobotConfigurationData::id() == type_name)
+  {
+    _customized_parser = std::bind(&ParserROS::parseRobotConfigurationData, this, _1, _2);
+  }
   else if ("tsl_msgs/TSLDefinition" == type_name)
   {
     _customized_parser = std::bind(&ParserROS::parseTSLDefinition, this, _1, _2);
@@ -626,6 +630,99 @@ inline void ParserROS::process_tsl_values(const std::string& prefix, const doubl
     auto& series = getSeries(fmt::format("{}/{}", prefix, definition[i]));
     series.pushBack({ timestamp, values[i] });
   }
+}
+
+void ParserROS::parseRobotConfigurationData(const std::string& prefix, double& timestamp)
+{
+  using namespace RosMsgParser;
+
+  getSeries(prefix + "/sequence_id")
+      .pushBack({ timestamp, double(_deserializer->deserialize(UINT32).convert<uint32_t>()) });
+  getSeries(prefix + "/wall_time")
+      .pushBack({ timestamp, double(_deserializer->deserialize(INT64).convert<int64_t>()) });
+  getSeries(prefix + "/monotonic_time")
+      .pushBack({ timestamp, double(_deserializer->deserialize(INT64).convert<int64_t>()) });
+  getSeries(prefix + "/sync_timestamp")
+      .pushBack({ timestamp, double(_deserializer->deserialize(INT64).convert<int64_t>()) });
+  getSeries(prefix + "/joint_name_hash")
+      .pushBack({ timestamp, double(_deserializer->deserialize(INT32).convert<int32_t>()) });
+
+  // joint_angles (float32 sequence)
+  uint32_t joint_angles_len = _deserializer->deserializeUInt32();
+  for (uint32_t i = 0; i < joint_angles_len && i < 50; i++)
+  {
+    getSeries(fmt::format("{}/joint_angles/{}", prefix, i))
+        .pushBack({ timestamp, double(_deserializer->deserialize(FLOAT32).convert<float>()) });
+  }
+  if (joint_angles_len > 50)
+  {
+    for (uint32_t i = 50; i < joint_angles_len; i++)
+      (void)_deserializer->deserialize(FLOAT32);
+  }
+
+  // joint_velocities (float32 sequence)
+  uint32_t joint_vel_len = _deserializer->deserializeUInt32();
+  for (uint32_t i = 0; i < joint_vel_len && i < 50; i++)
+  {
+    getSeries(fmt::format("{}/joint_velocities/{}", prefix, i))
+        .pushBack({ timestamp, double(_deserializer->deserialize(FLOAT32).convert<float>()) });
+  }
+  if (joint_vel_len > 50)
+  {
+    for (uint32_t i = 50; i < joint_vel_len; i++)
+      (void)_deserializer->deserialize(FLOAT32);
+  }
+
+  // joint_torques (float32 sequence)
+  uint32_t joint_torques_len = _deserializer->deserializeUInt32();
+  for (uint32_t i = 0; i < joint_torques_len && i < 50; i++)
+  {
+    getSeries(fmt::format("{}/joint_torques/{}", prefix, i))
+        .pushBack({ timestamp, double(_deserializer->deserialize(FLOAT32).convert<float>()) });
+  }
+  if (joint_torques_len > 50)
+  {
+    for (uint32_t i = 50; i < joint_torques_len; i++)
+      (void)_deserializer->deserialize(FLOAT32);
+  }
+
+  parsePoint(prefix + "/root_position", timestamp);
+  parseQuaternion(prefix + "/root_orientation", timestamp);
+  parseVector3(prefix + "/pelvis_linear_velocity", timestamp);
+  parseVector3(prefix + "/pelvis_angular_velocity", timestamp);
+  parseVector3(prefix + "/pelvis_linear_acceleration", timestamp);
+
+  // force_sensor_data: SpatialVectorMessage[] (sequence_id, angular_part Vector3, linear_part Vector3)
+  uint32_t force_len = _deserializer->deserializeUInt32();
+  for (uint32_t i = 0; i < force_len; i++)
+  {
+    std::string p = fmt::format("{}/force_sensor_data/{}", prefix, i);
+    (void)_deserializer->deserialize(UINT32);  // sequence_id
+    parseVector3(p + "/angular_part", timestamp);
+    parseVector3(p + "/linear_part", timestamp);
+  }
+
+  // imu_sensor_data: IMUPacket[] (sequence_id, Quaternion, Vector3, Vector3, float64 time)
+  uint32_t imu_len = _deserializer->deserializeUInt32();
+  for (uint32_t i = 0; i < imu_len; i++)
+  {
+    std::string p = fmt::format("{}/imu_sensor_data/{}", prefix, i);
+    (void)_deserializer->deserialize(UINT32);  // sequence_id
+    parseQuaternion(p + "/orientation", timestamp);
+    parseVector3(p + "/angular_velocity", timestamp);
+    parseVector3(p + "/linear_acceleration", timestamp);
+    getSeries(p + "/time")
+        .pushBack({ timestamp, _deserializer->deserialize(FLOAT64).convert<double>() });
+  }
+
+  getSeries(prefix + "/robot_motion_status")
+      .pushBack({ timestamp, double(_deserializer->deserialize(BYTE).convert<uint8_t>()) });
+  getSeries(prefix + "/last_received_packet_type_id")
+      .pushBack({ timestamp, double(_deserializer->deserialize(INT32).convert<int32_t>()) });
+  getSeries(prefix + "/last_received_packet_unique_id")
+      .pushBack({ timestamp, double(_deserializer->deserialize(INT64).convert<int64_t>()) });
+  getSeries(prefix + "/last_received_packet_robot_timestamp")
+      .pushBack({ timestamp, double(_deserializer->deserialize(INT64).convert<int64_t>()) });
 }
 
 void ParserROS::parseTSLDefinition(const std::string& prefix, double& timestamp)
