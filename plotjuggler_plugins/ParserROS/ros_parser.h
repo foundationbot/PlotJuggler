@@ -62,6 +62,7 @@ protected:
   void parsePalStatisticsValues(const std::string& prefix, double& timestamp);
 
   void parseRobotConfigurationData(const std::string& prefix, double& timestamp);
+  void parseRobotConfigurationDataJointOrder(const std::string& prefix, double& timestamp);
 
   void parseTSLDefinition(const std::string& prefix, double& timestamp);
   void parseTSLValues(const std::string& prefix, double& timestamp);

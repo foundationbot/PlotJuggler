@@ -304,6 +304,16 @@ struct RobotConfigurationData
     return "controller_msgs/RobotConfigurationData";
   }
 };
+
+//--------------------
+// controller_msgs/msg/RobotConfigurationDataJointOrder (custom parser for PlotJuggler)
+struct RobotConfigurationDataJointOrder
+{
+  static const char* id()
+  {
+    return "controller_msgs/RobotConfigurationDataJointOrder";
+  }
+};
 }  // namespace PJ::Msg
 
 #endif  // SPECIAL_MESSAGES_H

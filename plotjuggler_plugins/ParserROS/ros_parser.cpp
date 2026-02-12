@@ -98,6 +98,10 @@ ParserROS::ParserROS(const std::string& topic_name, const std::string& type_name
   {
     _customized_parser = std::bind(&ParserROS::parseRobotConfigurationData, this, _1, _2);
   }
+  else if (Msg::RobotConfigurationDataJointOrder::id() == type_name)
+  {
+    _customized_parser = std::bind(&ParserROS::parseRobotConfigurationDataJointOrder, this, _1, _2);
+  }
   else if ("tsl_msgs/TSLDefinition" == type_name)
   {
     _customized_parser = std::bind(&ParserROS::parseTSLDefinition, this, _1, _2);
@@ -723,6 +727,30 @@ void ParserROS::parseRobotConfigurationData(const std::string& prefix, double& t
       .pushBack({ timestamp, double(_deserializer->deserialize(INT64).convert<int64_t>()) });
   getSeries(prefix + "/last_received_packet_robot_timestamp")
       .pushBack({ timestamp, double(_deserializer->deserialize(INT64).convert<int64_t>()) });
+}
+
+void ParserROS::parseRobotConfigurationDataJointOrder(const std::string& prefix, double& timestamp)
+{
+  using namespace RosMsgParser;
+
+  // sequence_id
+  getSeries(prefix + "/sequence_id")
+      .pushBack({ timestamp, double(_deserializer->deserialize(UINT32).convert<uint32_t>()) });
+
+  // joint_order: string[<=50] - bounded string (single string, max 50 chars)
+  std::string joint_order_str;
+  _deserializer->deserializeString(joint_order_str);
+  getStringSeries(prefix + "/joint_order").pushBack({ timestamp, joint_order_str });
+
+  // imu_order: string[<=50] - bounded string
+  std::string imu_order_str;
+  _deserializer->deserializeString(imu_order_str);
+  getStringSeries(prefix + "/imu_order").pushBack({ timestamp, imu_order_str });
+
+  // force_torque_order: string[<=50] - bounded string
+  std::string force_torque_order_str;
+  _deserializer->deserializeString(force_torque_order_str);
+  getStringSeries(prefix + "/force_torque_order").pushBack({ timestamp, force_torque_order_str });
 }
 
 void ParserROS::parseTSLDefinition(const std::string& prefix, double& timestamp)
