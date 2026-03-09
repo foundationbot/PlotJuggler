@@ -640,7 +640,7 @@ QColor PlotWidgetBase::getColorHint(PlotDataXY* data)
     }
   }
   QColor color;
-  bool use_plot_color_index = settings.value("Preferences::use_plot_color_index", false).toBool();
+  bool use_plot_color_index = settings.value("Preferences::use_plot_color_index", true).toBool();
   int index = p->curve_list.size();
 
   if (!use_plot_color_index)

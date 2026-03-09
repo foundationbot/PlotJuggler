@@ -42,7 +42,7 @@ PreferencesDialog::PreferencesDialog(QWidget* parent)
   ui->checkBoxSkipSplash->setChecked(no_splash);
 
   // Behavior
-  bool use_plot_color_index = settings.value("Preferences::use_plot_color_index", false).toBool();
+  bool use_plot_color_index = settings.value("Preferences::use_plot_color_index", true).toBool();
   bool remember_color = settings.value("Preferences::remember_color", true).toBool();
 
   ui->checkBoxRememberColor->setChecked(remember_color);
