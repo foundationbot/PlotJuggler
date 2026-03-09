@@ -153,19 +153,19 @@ bool ParserROS::parseMessage(const PJ::MessageRef serialized_msg, double& timest
     key.toStr(series_name);
     PlotData& data = getSeries(series_name);
 
-    if (!_strict_truncation_check)
+    // INT64 and UINT64 always bypass the truncation check: converting a large
+    // 64-bit integer to double inevitably loses precision, so the check would
+    // always fire for fields like nanosecond timestamps regardless of the
+    // strict-truncation-check preference.
+    if (value.getTypeID() == BuiltinType::INT64)
     {
-      // bypass the truncation check
-      if (value.getTypeID() == BuiltinType::INT64)
-      {
-        data.pushBack({ timestamp, double(value.convert<int64_t>()) });
-        continue;
-      }
-      if (value.getTypeID() == BuiltinType::UINT64)
-      {
-        data.pushBack({ timestamp, double(value.convert<uint64_t>()) });
-        continue;
-      }
+      data.pushBack({ timestamp, double(value.convert<int64_t>()) });
+      continue;
+    }
+    if (value.getTypeID() == BuiltinType::UINT64)
+    {
+      data.pushBack({ timestamp, double(value.convert<uint64_t>()) });
+      continue;
     }
     try
     {
